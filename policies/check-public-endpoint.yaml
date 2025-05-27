@@ -1,0 +1,24 @@
+apiVersion: policies.kyverno.io/v1alpha1
+kind: ValidatingPolicy
+metadata:
+  name: check-public-endpoint
+spec:
+  validationActions: 
+    - Deny
+  evaluation:
+    mode: JSON
+  variables:
+  - name: eksClusters
+    expression: >-
+      object.planned_values.root_module.child_modules.all(childModules, 
+        childModules.resources.all(resource, 
+          resource.type == 'aws_eks_cluster')
+      )
+  validations:
+  - message: The public endpoint for the EKS cluster is not disabled.
+    expression: >-
+      object.planned_values.root_module.child_modules.all(childModules, 
+        childModules.resources.exists(resource, 
+          resource.endpoint_public_access == false)
+      )
+

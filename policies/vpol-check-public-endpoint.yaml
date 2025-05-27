@@ -1,0 +1,13 @@
+
+apiVersion: policies.kyverno.io/v1alpha1
+kind: ValidatingPolicy
+metadata:
+  name: check-public-endpoint
+spec:
+  validationActions: 
+    - Deny
+  evaluation:
+    mode: JSON
+  validations:
+  - message: The public endpoint for the EKS cluster is not disabled.
+    expression: ""
