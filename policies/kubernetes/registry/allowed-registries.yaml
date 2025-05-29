@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Namespace
+  name: platform
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: allowed-registries
+  namespace: platform
+data:
+  registries: "foo.com, bar.io"

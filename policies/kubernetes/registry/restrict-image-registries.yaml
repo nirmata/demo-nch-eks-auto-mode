@@ -1,0 +1,31 @@
+apiVersion: policies.kyverno.io/v1alpha1
+kind: ValidatingPolicy
+metadata:
+  name: restrict-image-registries
+spec:
+  validationActions: 
+    - Deny
+  evaluation:
+    background:
+      enabled: true
+  matchConstraints:
+    resourceRules:
+    - apiGroups:   [""]
+      apiVersions: ["v1"]
+      operations:  ["CREATE", "UPDATE"]
+      resources:   ["pods"]
+  variables:
+  - name: registriesConfigMap
+    expression: >-
+      resource.Get("v1", "configmaps", "platform", "allowed-registries")
+  - name: allowedRegistries
+    expression: "variables.registriesConfigMap.data['registries'].split(',')"
+  - name: allContainers
+    expression: "object.spec.containers 
+      + object.spec.?initContainers.orValue([]) 
+      + object.spec.?ephemeralContainers.orValue([])"
+  validations:
+  - message: This Pod has an image that is not from an approved registry.
+    expression: "variables.allContainers.all(container, 
+      variables.allowedRegistries.exists(allowedRegistry,
+        container.image.startsWith(allowedRegistry.trim())))"
