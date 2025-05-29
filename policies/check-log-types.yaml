@@ -1,0 +1,25 @@
+apiVersion: policies.kyverno.io/v1alpha1
+kind: ValidatingPolicy
+metadata:
+  name: check-log-types
+  annotations:
+    policies.kyverno.io/category: Terraform - EKS Auto Mode Best Practices
+    policies.kyverno.io/description: Log types for the EKS cluster should be set
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: TerraformPlan
+    policies.kyverno.io/title: Check Log Types
+spec:
+  evaluation:
+    mode: JSON
+  variables:
+    - name: eksChanges
+      expression: >- 
+        object.resource_changes.filter(rc, rc.type == "aws_eks_cluster" && 
+          rc.change.actions.exists(a, a == 'create' || a == 'update'))
+    - name: requiredLogTypes
+      expression: '["api", "audit", "authenticator", "controllerManager", "scheduler"]'
+  validations:
+  - message: Required log types ("api", "audit", "authenticator", "controllerManager", "scheduler") are not set.
+    expression: >-
+      variables.requiredLogTypes.all(l,
+        variables.eksChanges.all(rc, rc.change.after.enabled_cluster_log_types.exists(lt, lt == l)))

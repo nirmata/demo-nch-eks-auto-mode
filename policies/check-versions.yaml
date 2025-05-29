@@ -1,13 +1,13 @@
 apiVersion: policies.kyverno.io/v1alpha1
 kind: ValidatingPolicy
 metadata:
-  name: check-public-endpoint
+  name: check-versions
   annotations:
     policies.kyverno.io/category: Terraform - EKS Auto Mode Best Practices
-    policies.kyverno.io/description: Public endpoint for the EKS cluster should be disabled
-    policies.kyverno.io/severity: critical
+    policies.kyverno.io/description: An approved Kubernetes version should be used
+    policies.kyverno.io/severity: medium
     policies.kyverno.io/subject: TerraformPlan
-    policies.kyverno.io/title: Check Public Endpoint
+    policies.kyverno.io: Check Versions
 spec:
   evaluation:
     mode: JSON
@@ -16,8 +16,9 @@ spec:
       expression: >- 
         object.resource_changes.filter(rc, rc.type == "aws_eks_cluster" && 
           rc.change.actions.exists(a, a == 'create' || a == 'update'))
+    - name: allowedVersions
+      expression: '["1.28", "1.29", "1.30"]'
   validations:
-  - message: The public endpoint for the EKS cluster must be disabled. Set `endpoint_public_access` to `false` in the `vpc_config` block.
+  - message: The Kubernetes version must be one of the allowed versions ("1.28", "1.29", "1.30").
     expression: >-
-      variables.eksChanges.all(rc,
-        rc.change.after.vpc_config.all(vpc, vpc.endpoint_public_access == false))
+      variables.eksChanges.all(rc, rc.change.after.version in variables.allowedVersions)
